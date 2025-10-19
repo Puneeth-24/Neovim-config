@@ -1,28 +1,93 @@
 return {
-'shaunsingh/nord.nvim',
-lazy=false,
-priority=1000,
-config = function()
-	-- Example config in lua
-	vim.g.nord_contrast = true
-	vim.g.nord_borders = false
-	vim.g.nord_disable_background = true
-	vim.g.nord_italic = false
-	vim.g.nord_uniform_diff_background = true
-	vim.g.nord_bold = false
+	"catppuccin/nvim",
+	name = "catppuccin",
+	priority = 1000, -- ✅ Missing comma added here
+	config = function()
+		require("catppuccin").setup({
+			flavour = "auto", -- latte, frappe, macchiato, mocha
+			background = {
+				light = "latte",
+				dark = "mocha",
+			},
+			transparent_background = true,
+			float = {
+				transparent = false,
+				solid = false,
+			},
+			show_end_of_buffer = false,
+			term_colors = false,
+			dim_inactive = {
+				enabled = false,
+				shade = "dark",
+				percentage = 0.15,
+			},
+			no_italic = false,
+			no_bold = false,
+			no_underline = false,
+			styles = {
+				comments = { "italic" },
+				conditionals = { "italic" },
+				loops = {},
+				functions = {},
+				keywords = {},
+				strings = {},
+				variables = {},
+				numbers = {},
+				booleans = {},
+				properties = {},
+				types = {},
+				operators = {},
+			},
+			lsp_styles = {
+				virtual_text = {
+					errors = { "italic" },
+					hints = { "italic" },
+					warnings = { "italic" },
+					information = { "italic" },
+					ok = { "italic" },
+				},
+				underlines = {
+					errors = { "underline" },
+					hints = { "underline" },
+					warnings = { "underline" },
+					information = { "underline" },
+					ok = { "underline" },
+				},
+				inlay_hints = {
+					background = true,
+				},
+			},
+			color_overrides = {},
+			custom_highlights = {},
+			default_integrations = true,
+			auto_integrations = false,
+			integrations = {
+				cmp = true,
+				gitsigns = true,
+				nvimtree = true,
+				notify = false,
+				mini = {
+					enabled = true,
+					indentscope_color = "",
+				},
+			},
+		})
+		vim.cmd.colorscheme("catppuccin")
+		local is_transparent = true
 
-	-- Load the colorscheme
-    require('nord').set()
+		local function toggle_transparency()
+			is_transparent = not is_transparent
 
-	local bg_transparent = true
-	
-	local toggle_transparency = function()
-			bg_transparent = not bg_transparent
-			vim.g.nord_disable_background = bg_transparent
-			vim.cmd [[colorscheme nord]]
+			require("catppuccin").setup({
+				transparent_background = is_transparent,
+			})
 
-	end
-	vim.keymap.set('n','<leader>bg',toggle_transparency,{noremap = true,silent =true})
-end
+			vim.cmd.colorscheme("catppuccin")
 
- }
+			vim.notify("Catppuccin transparency: " .. (is_transparent and "ON" or "OFF"), vim.log.levels.INFO)
+		end
+
+		-- 🗝️ Map the keybinding
+		vim.keymap.set("n", "<leader>bg", toggle_transparency, { desc = "Toggle Catppuccin transparency" })
+	end,
+}

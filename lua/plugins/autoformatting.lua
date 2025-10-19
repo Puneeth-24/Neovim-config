@@ -15,7 +15,8 @@ return {
 				"prettier", -- ts/js formatter
 				"eslint_d", -- ts/js linter
 				"shfmt", -- Shell formatter
-				"checkmake", -- linter for Makefiles
+				"checkmake", -- Makefile linter
+				"clang-format", -- ✅ C/C++ formatter
 				-- 'stylua', -- lua formatter; Already installed via Mason
 				-- 'ruff', -- Python linter and formatter; Already installed via Mason
 			},
@@ -23,20 +24,28 @@ return {
 		})
 
 		local sources = {
+			-- Diagnostics / Linters
 			diagnostics.checkmake,
+
+			-- Formatters
 			formatting.prettier.with({ filetypes = { "html", "json", "yaml", "markdown" } }),
 			formatting.stylua,
 			formatting.shfmt.with({ args = { "-i", "4" } }),
 			formatting.terraform_fmt,
 			require("none-ls.formatting.ruff").with({ extra_args = { "--extend-select", "I" } }),
 			require("none-ls.formatting.ruff_format"),
+
+			-- ✅ C/C++ Formatting
+			formatting.clang_format.with({
+				filetypes = { "c", "cpp", "objc", "objcpp" }, -- specify C/C++ files
+				extra_args = { "--style=LLVM" }, -- optional: choose your preferred style
+			}),
 		}
 
 		local augroup = vim.api.nvim_create_augroup("LspFormatting", {})
 		null_ls.setup({
 			-- debug = true, -- Enable debug mode. Inspect logs with :NullLsLog.
 			sources = sources,
-			-- you can reuse a shared lspconfig on_attach callback here
 			on_attach = function(client, bufnr)
 				if client:supports_method("textDocument/formatting") then
 					vim.api.nvim_clear_autocmds({ group = augroup, buffer = bufnr })
