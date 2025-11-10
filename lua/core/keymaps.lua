@@ -24,9 +24,6 @@ vim.keymap.set("n", "x", '"_x"', opts)
 vim.keymap.set("n", "<C-d>", "<C-d>zz", opts)
 vim.keymap.set("n", "<C-u>", "<C-u>zz", opts)
 
---deleting words
-vim.keymap.set("i", "<C-h>", "<C-w>", opts)
-
 --buffers
 --got to next buffer
 vim.keymap.set("n", "<Tab>", ":bnext<CR>", opts)
