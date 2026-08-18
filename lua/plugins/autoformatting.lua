@@ -1,24 +1,25 @@
 return {
 	"nvimtools/none-ls.nvim",
+	event = { "BufReadPre", "BufNewFile" },
 	dependencies = {
 		"nvimtools/none-ls-extras.nvim",
-		"jayp0521/mason-null-ls.nvim", -- ensure dependencies are installed
+		"jayp0521/mason-null-ls.nvim",
 	},
 	config = function()
 		local null_ls = require("null-ls")
-		local formatting = null_ls.builtins.formatting -- to setup formatters
-		local diagnostics = null_ls.builtins.diagnostics -- to setup linters
+		local formatting = null_ls.builtins.formatting
+		local diagnostics = null_ls.builtins.diagnostics
 
-		-- Formatters & linters for mason to install
+		-- Mason integration to ensure binaries are installed
 		require("mason-null-ls").setup({
 			ensure_installed = {
-				"prettier", -- ts/js formatter
-				"eslint_d", -- ts/js linter
-				"shfmt", -- Shell formatter
-				"checkmake", -- Makefile linter
-				"clang-format", -- ✅ C/C++ formatter
-				-- 'stylua', -- lua formatter; Already installed via Mason
-				-- 'ruff', -- Python linter and formatter; Already installed via Mason
+				"prettier",
+				"eslint_d",
+				"shfmt",
+				"checkmake",
+				"clang-format",
+				"stylua",
+				"ruff",
 			},
 			automatic_installation = true,
 		})
@@ -26,25 +27,30 @@ return {
 		local sources = {
 			-- Diagnostics / Linters
 			diagnostics.checkmake,
+			require("none-ls.diagnostics.eslint_d"),
 
 			-- Formatters
-			formatting.prettier.with({ filetypes = { "html", "json", "yaml", "markdown" } }),
+			formatting.prettier.with({
+				filetypes = { "html", "json", "yaml", "markdown", "javascript", "typescript", "typescriptreact" },
+			}),
 			formatting.stylua,
 			formatting.shfmt.with({ args = { "-i", "4" } }),
 			formatting.terraform_fmt,
+
+			-- Python (Ruff from none-ls-extras)
 			require("none-ls.formatting.ruff").with({ extra_args = { "--extend-select", "I" } }),
 			require("none-ls.formatting.ruff_format"),
 
-			-- ✅ C/C++ Formatting
+			-- C / C++
 			formatting.clang_format.with({
-				filetypes = { "c", "cpp", "objc", "objcpp" }, -- specify C/C++ files
-				extra_args = { "--style=LLVM" }, -- optional: choose your preferred style
+				filetypes = { "c", "cpp", "objc", "objcpp" },
+				extra_args = { "--style=LLVM" },
 			}),
 		}
 
-		local augroup = vim.api.nvim_create_augroup("LspFormatting", {})
+		local augroup = vim.api.nvim_create_augroup("LspFormatting", { clear = true })
+
 		null_ls.setup({
-			-- debug = true, -- Enable debug mode. Inspect logs with :NullLsLog.
 			sources = sources,
 			on_attach = function(client, bufnr)
 				if client:supports_method("textDocument/formatting") then
@@ -53,7 +59,12 @@ return {
 						group = augroup,
 						buffer = bufnr,
 						callback = function()
-							vim.lsp.buf.format({ async = false })
+							vim.lsp.buf.format({
+								bufnr = bufnr,
+								filter = function(c)
+									return c.id == client.id
+								end,
+							})
 						end,
 					})
 				end

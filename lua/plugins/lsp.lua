@@ -1,12 +1,10 @@
 return {
 	"neovim/nvim-lspconfig",
+	event = { "BufReadPre", "BufNewFile" },
 	dependencies = {
-		-- Automatically install LSPs and related tools to stdpath for Neovim
-		{ "mason-org/mason.nvim", config = true }, -- NOTE: Must be loaded before dependants
-		"mason-org/mason-lspconfig.nvim",
+		{ "williamboman/mason.nvim", config = true },
+		"williamboman/mason-lspconfig.nvim",
 		"WhoIsSethDaniel/mason-tool-installer.nvim",
-
-		-- Useful status updates for LSP.
 		{
 			"j-hui/fidget.nvim",
 			opts = {
@@ -15,36 +13,62 @@ return {
 				},
 			},
 		},
-
-		-- Allows extra capabilities provided by nvim-cmp
 		"hrsh7th/cmp-nvim-lsp",
 	},
 	config = function()
+		-- Diagnostic display configuration
+		vim.diagnostic.config({
+			underline = true,
+			update_in_insert = false,
+			virtual_text = {
+				spacing = 4,
+				source = "if_many",
+				prefix = "●",
+			},
+			severity_sort = true,
+			float = {
+				border = "rounded",
+				source = "always",
+			},
+			signs = {
+				text = {
+					[vim.diagnostic.severity.ERROR] = " ",
+					[vim.diagnostic.severity.WARN] = " ",
+					[vim.diagnostic.severity.INFO] = " ",
+					[vim.diagnostic.severity.HINT] = " ",
+				},
+			},
+		})
+
+		-- Autocommand for active LSP buffers
 		vim.api.nvim_create_autocmd("LspAttach", {
-			group = vim.api.nvim_create_augroup("kickstart-lsp-attach", { clear = true }),
+			group = vim.api.nvim_create_augroup("lsp-attach", { clear = true }),
 			callback = function(event)
 				local map = function(keys, func, desc, mode)
 					mode = mode or "n"
 					vim.keymap.set(mode, keys, func, { buffer = event.buf, desc = "LSP: " .. desc })
 				end
 
-				-- Telescope-based LSP keymaps
-				map("gd", require("telescope.builtin").lsp_definitions, "[G]oto [D]efinition")
-				map("gr", require("telescope.builtin").lsp_references, "[G]oto [R]eferences")
-				map("gI", require("telescope.builtin").lsp_implementations, "[G]oto [I]mplementation")
-				map("<leader>D", require("telescope.builtin").lsp_type_definitions, "Type [D]efinition")
-				map("<leader>ds", require("telescope.builtin").lsp_document_symbols, "[D]ocument [S]ymbols")
-				map("<leader>ws", require("telescope.builtin").lsp_dynamic_workspace_symbols, "[W]orkspace [S]ymbols")
+				-- Navigation / Telescope integrations
+				local builtin = require("telescope.builtin")
+				map("gd", builtin.lsp_definitions, "[G]oto [D]efinition")
+				map("gr", builtin.lsp_references, "[G]oto [R]eferences")
+				map("gI", builtin.lsp_implementations, "[G]oto [I]mplementation")
+				map("<leader>D", builtin.lsp_type_definitions, "Type [D]efinition")
+				map("<leader>ds", builtin.lsp_document_symbols, "[D]ocument [S]ymbols")
+				map("<leader>ws", builtin.lsp_dynamic_workspace_symbols, "[W]orkspace [S]ymbols")
 
-				-- Common LSP actions
+				-- Actions & Hover
+				map("K", vim.lsp.buf.hover, "Hover Documentation")
 				map("<leader>rn", vim.lsp.buf.rename, "[R]e[n]ame")
 				map("<leader>ca", vim.lsp.buf.code_action, "[C]ode [A]ction", { "n", "x" })
 				map("gD", vim.lsp.buf.declaration, "[G]oto [D]eclaration")
 
-				-- Highlight references under cursor
 				local client = vim.lsp.get_client_by_id(event.data.client_id)
+
+				-- Document highlight on hover
 				if client and client:supports_method(vim.lsp.protocol.Methods.textDocument_documentHighlight) then
-					local highlight_augroup = vim.api.nvim_create_augroup("kickstart-lsp-highlight", { clear = false })
+					local highlight_augroup = vim.api.nvim_create_augroup("lsp-highlight", { clear = false })
 					vim.api.nvim_create_autocmd({ "CursorHold", "CursorHoldI" }, {
 						buffer = event.buf,
 						group = highlight_augroup,
@@ -56,15 +80,15 @@ return {
 						callback = vim.lsp.buf.clear_references,
 					})
 					vim.api.nvim_create_autocmd("LspDetach", {
-						group = vim.api.nvim_create_augroup("kickstart-lsp-detach", { clear = true }),
+						group = vim.api.nvim_create_augroup("lsp-detach", { clear = true }),
 						callback = function(event2)
 							vim.lsp.buf.clear_references()
-							vim.api.nvim_clear_autocmds({ group = "kickstart-lsp-highlight", buffer = event2.buf })
+							vim.api.nvim_clear_autocmds({ group = "lsp-highlight", buffer = event2.buf })
 						end,
 					})
 				end
 
-				-- Toggle inlay hints
+				-- Inlay hints toggle
 				if client and client:supports_method(vim.lsp.protocol.Methods.textDocument_inlayHint) then
 					map("<leader>th", function()
 						vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled({ bufnr = event.buf }))
@@ -73,11 +97,11 @@ return {
 			end,
 		})
 
-		-- Capabilities from nvim-cmp
+		-- Default client capabilities with cmp support
 		local capabilities = vim.lsp.protocol.make_client_capabilities()
 		capabilities = vim.tbl_deep_extend("force", capabilities, require("cmp_nvim_lsp").default_capabilities())
 
-		-- List of servers and their configurations
+		-- Language server configurations
 		local servers = {
 			ts_ls = {},
 			ruff = {},
@@ -112,7 +136,6 @@ return {
 						runtime = { version = "LuaJIT" },
 						workspace = {
 							checkThirdParty = false,
-							library = vim.api.nvim_get_runtime_file("", true),
 						},
 						diagnostics = {
 							globals = { "vim" },
@@ -122,29 +145,39 @@ return {
 					},
 				},
 			},
-
-			-- ✅ Added C/C++ LSP
 			clangd = {
-				cmd = { "clangd" },
-				filetypes = { "c", "cpp", "objc", "objcpp" },
-				root_dir = require("lspconfig.util").root_pattern("compile_commands.json", ".git", "CMakeLists.txt"),
-				capabilities = capabilities,
+				cmd = {
+					"clangd",
+					"--background-index",
+					"--clang-tidy",
+					"--header-insertion=iwyu",
+					"--completion-style=detailed",
+					"--function-arg-placeholders",
+					"--fallback-style=llvm",
+				},
+				capabilities = {
+					offsetEncoding = { "utf-16" },
+				},
 			},
 		}
 
-		-- Ensure all servers/tools are installed
+		-- Setup Mason tools
 		local ensure_installed = vim.tbl_keys(servers or {})
 		vim.list_extend(ensure_installed, {
-			"stylua", -- Used to format Lua code
-			"clangd", -- ✅ ensure clangd gets installed via Mason
+			"stylua",
 		})
 		require("mason-tool-installer").setup({ ensure_installed = ensure_installed })
 
-		-- Setup all servers
-		for server, cfg in pairs(servers) do
-			cfg.capabilities = vim.tbl_deep_extend("force", {}, capabilities, cfg.capabilities or {})
-			vim.lsp.config(server, cfg)
-			vim.lsp.enable(server)
-		end
+		-- Setup language servers via mason-lspconfig
+		local lspconfig = require("lspconfig")
+		require("mason-lspconfig").setup({
+			handlers = {
+				function(server_name)
+					local server = servers[server_name] or {}
+					server.capabilities = vim.tbl_deep_extend("force", {}, capabilities, server.capabilities or {})
+					lspconfig[server_name].setup(server)
+				end,
+			},
+		})
 	end,
 }
