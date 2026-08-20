@@ -47,6 +47,11 @@ python3 --version
 pip3 --version
 ```
 
+## NPM
+install node package manager with the bellow link <br>
+https://nodejs.org/en/download <br>
+choose your requirements accordingly and install npm.
+
 ## Working of treesitter
 
 for treesitter to work, you have to install the treesitter cli.
