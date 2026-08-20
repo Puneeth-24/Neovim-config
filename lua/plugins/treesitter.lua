@@ -1,6 +1,7 @@
 return {
 	"nvim-treesitter/nvim-treesitter",
 	branch = "master",
+	lazy = false,
 	build = ":TSUpdate",
 	event = { "BufReadPre", "BufNewFile" },
 	cmd = { "TSUpdateSync", "TSUpdate", "TSInstall", "TSUninstall" },
@@ -17,8 +18,6 @@ return {
 				"json",
 				"lua",
 				"luadoc",
-				"markdown",
-				"markdown_inline",
 				"python",
 				"query",
 				"regex",
