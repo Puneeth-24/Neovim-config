@@ -46,7 +46,16 @@ verify
 python3 --version
 pip3 --version
 ```
----
 
+## Working of treesitter
+
+for treesitter to work, you have to install the treesitter cli.
+the cli should be installed using the package manager and NOT npm.
+```bash
+sudo apt update
+sudo apt install tree-sitter-cli
+```
+
+----
 for now I use mostly these, Neovim can support many lsp's.
 I will add for more lsp's later.
