@@ -55,3 +55,6 @@ vim.keymap.set("n", "<leader>lw", "<cmd>set wrap!<CR>", {})
 vim.keymap.set("n", "<leader>tt", "<cmd>:tabnew | terminal<CR>", {})
 --go back to normal mode in terminal
 vim.keymap.set("t", "<Esc>", [[<C-\><C-n>]])
+
+-- Toggle Smearcursor plugin
+vim.keymap.set("n", "<leader>c", ":SmearCursorToggle<CR>", opts)
